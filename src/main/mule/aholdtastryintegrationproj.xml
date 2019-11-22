@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="6c8e76dd-1ce4-48cf-be76-bcd07058daf6" basePath="centralizeddb">
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<db:config name="CentralizedDB_Config" doc:name="Database Config" doc:id="cfd232f9-6d20-4796-84a8-55e3d4fa0c80" >
+		<db:mssql-connection host="rs06ue2dbeerkiosk-sql01.database.windows.net" user="dbadmin" password="1!donwant2b@pirate" databaseName="BeerKioskdatabase" />
+	</db:config>
+	<http:request-config name="HTTP_Request_config_Tastry" doc:name="HTTP Request configuration" doc:id="8a053ffd-9945-46eb-ab6a-da17064a28c5" basePath="/api">
+		<http:request-connection protocol="HTTPS" host="portal.tastry.com" />
+	</http:request-config>
+	<http:request-config name="HTTP_Request_config_CentralDB" doc:name="HTTP Request configuration" doc:id="0c0ea894-cc0d-4b45-a963-7927ac3e070b" basePath="/centralizeddb" responseTimeout="500000">
+		<http:request-connection host="localhost" port="8081" connectionIdleTimeout="60000"/>
+	</http:request-config>
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="c22a176f-8162-4541-a62b-0ec6375d2d30" basePath="tastrydata">
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<flow name="deltaextractfetchFlow" doc:id="045bc205-8e04-4f37-9ae1-e6851c2a1542" >
+		<http:listener doc:name="DeltaExtractFetchEndPoint" doc:id="8383230f-60f0-4540-9537-f4f247940823" config-ref="HTTP_Listener_config" path="/deltaextractfetch"/>
+		<db:select doc:name="NewBeerData" doc:id="cfe71dcb-db24-450f-845c-dda2c324f3af" config-ref="CentralizedDB_Config">
+			<db:sql >SELECT BS.STORE_NUMBER, BS.ITEM_ID, BS.UPC, BS.ITEM_NAME, BS.BEER_CAT_ID, BS.BEER_SUBCAT_ID, BS.BEER_CAT_NAME, BS.BEER_SUBCAT_NAME, NEWBEER.STATUS
+FROM
+(SELECT STORE_NUMBER, UPC, 'A' STATUS FROM BEERSTAGE
+  EXCEPT
+ SELECT STORE_NUMBER, UPC, 'A' STATUS FROM STORE_BEER) AS NEWBEER
+
+ JOIN
+
+ BEERSTAGE BS ON NEWBEER.STORE_NUMBER = BS.STORE_NUMBER
+                                AND
+                                NEWBEER.UPC = BS.UPC</db:sql>
+		</db:select>
+		<set-payload value="#[%dw 2.0
+
+output application/json
+
+---
+payload]" doc:name="Set Payload" doc:id="6afa891d-2baf-4b1b-aee0-65287f4fd057" />
+		<logger level="INFO" doc:name="Logger" doc:id="9bab0063-ff59-4748-8ca3-a12073bd5289" message="#[payload]"/>
+	</flow>
+	
+	<flow name="aholdtastryintegrationdbapisFlow" doc:id="ee46e5f8-7036-423c-ab0f-aa6de6a62b7e" >
+		<http:listener doc:name="API to check for a given beer" doc:id="87727e91-5de6-4f1a-bea1-7a42755d6020" config-ref="HTTP_Listener_config" path="/beercheck" outputMimeType="application/json"/>
+		<db:select doc:name="Query to check for a given beer" doc:id="4a343e89-3484-43b2-b50f-1a11ee450db6" config-ref="CentralizedDB_Config">
+			<db:sql >#[&quot; SELECT * FROM $(payload.tabName) WHERE $(payload.pkColName) = :upc_param&quot;]</db:sql>
+			<db:input-parameters ><![CDATA[#[{`upc_param`:payload.pkVal}]]]></db:input-parameters>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="8fc03f98-fe9f-431e-8221-1e6299966fd6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+---
+{
+	isBeerPresent:
+		if (payload == null or isEmpty(payload)) 
+			'False'
+		else
+			'True'
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="73950153-468d-449b-96e5-c0ab411db38d" message="payload"/>
+	</flow>
+	
+	<flow name="pollnpushdeltaextractFlow" doc:id="d1ba34a8-f72d-4223-951f-46ebef8dc76b" >
+		<http:listener doc:name="Listener" doc:id="d9290646-de50-4cbe-8676-4e0ab78716ed" config-ref="HTTP_Listener_config1" path="/getdeltaextract"/>
+		<http:request method="GET" doc:name="InvokeDeltaExtractFetchEndPoint" doc:id="6fbf0cf4-bd01-448b-83cd-3a42b46b67b5" config-ref="HTTP_Request_config_CentralDB" path="/deltaextractfetch" sendCorrelationId="ALWAYS">
+			<reconnect />
+			<http:response-validator >
+				<http:success-status-code-validator values="200" />
+			</http:response-validator>
+		</http:request>
+		<validation:is-not-null doc:name="CheckIfDeltaExtractAvailable" doc:id="3416b57b-75e8-4caa-b1d4-2b281ca06127" value="#[!isEmpty(payload)]" message="Delta Extract is available"/>
+		<ee:transform doc:name="ConvertToTastryRequest" doc:id="05d838e6-00e4-474c-b125-2a39593419b0">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	STORE_NUMBER: trim(payload01.STORE_NUMBER) default "",
+	ITEM_ID: trim(payload01.ITEM_ID) default "",
+	UPC: trim(payload01.UPC) default "",
+	ITEM_NAME: trim(payload01.ITEM_NAME) default "",
+	BEER_CAT_ID: trim(payload01.BEER_CAT_ID) default "",
+	BEER_SUBCAT_ID: trim(payload01.BEER_SUBCAT_ID) default "",
+	BEER_CAT_NAME: trim(payload01.BEER_CAT_NAME) default "",
+	BEER_SUBCAT_NAME: trim(payload01.BEER_SUBCAT_NAME) default "",
+	STATUS: trim(payload01.STATUS) default ""
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="9f1d94dc-5e20-4321-a92d-b1b0765b7115" message="#[payload]"/>
+	</flow>
+	
+	<flow name="pushtastryinfointodbFlow" doc:id="12dfac42-7b30-4fdb-8606-2fcbfc2b0a67" >
+		<http:listener doc:name="Listener" doc:id="3a401730-c165-4e82-b435-d23c4b7d0d7f" config-ref="HTTP_Listener_config1" path="/pairingsinfo"/>
+		<set-variable value="#[%dw 2.0
+output application/java
+---
+[]]" doc:name="BeerGroupList" doc:id="8f800926-2fb5-4065-9599-5e8d8b7976d5" variableName="beerGroupList"/>
+			
+		<set-variable value="#[%dw 2.0
+output application/java
+---
+[]]" doc:name="BeerTypeList" doc:id="ec1caff2-cdd2-4595-aa44-352d65a466fc" variableName="beerTypeList"/>
+		<set-variable value="#[%dw 2.0
+output application/java
+---
+[]]" doc:name="NewBeerList" doc:id="bed70d24-fba1-4579-92ce-b8dab9db4c54" variableName="newBeerList"/>
+		<set-variable value="#[%dw 2.0
+output application/java
+---
+[]]" doc:name="ExistingBeerList" doc:id="873bc63b-1636-4aca-a5dd-774c2e76a059" variableName="existingBeerList"/>
+		<foreach doc:name="For Each" doc:id="9d027f94-443d-43bf-a611-ada5a4224ece" >
+			
+			<set-variable value="#[payload]" doc:name="Current Element" doc:id="4c5ec319-abe5-4fc4-a9aa-668e8f375359" variableName="currElement"/>
+			<set-payload value='#[%dw 2.0
+output application/json
+---
+
+{
+  "pkColName": "UPC",
+  "tabName": "BEER",
+  "pkVal": payload.Item_ID
+}]' doc:name="SAPI Request" doc:id="0bb9a058-ef03-4461-801a-0ea20895535c" />
+			<http:request method="GET" doc:name="Invoke SAPI to Check if Current Beer is Already Available" doc:id="01236053-3a74-4df8-a338-9692028b7cf7" config-ref="HTTP_Request_config_CentralDB" path="/beercheck" sendBodyMode="ALWAYS" outputMimeType="application/json">
+			</http:request>
+			<choice doc:name="Check if Current Beer is Already Available or not" doc:id="2861a066-f6c5-449d-a6c1-a4825ceff222" >
+				<when expression="#[payload.isBeerPresent == 'False']">
+					<set-variable value="#[%dw 2.0
+output application/java
+---
+
+{
+	BeerGroupID: vars.currElement.BeerCategoryID as Number,
+	BeerGroupName: vars.currElement.Category
+}]" doc:name="BeerGroupObj" doc:id="28772f8e-0fc4-44e7-beb2-b37fd0070c55" variableName="beerGroupObj" />
+		<set-variable value="#[%dw 2.0
+output application/java
+---
+vars.beerGroupList + vars.beerGroupObj]" doc:name="Add to BeerGroupList" doc:id="f2077460-e866-4969-91d0-2c8a4a2760ab" variableName="beerGroupList" />
+		<set-variable value="#[%dw 2.0
+output application/java
+---
+{
+	BeerTypeID: vars.currElement.BeerSubCategoryID as Number,
+	Name: vars.currElement.Subcategory,
+	BeerGroupID: vars.beerGroupObj.BeerGroupID
+}]" doc:name="BeerTypeObj" doc:id="38bad6b7-f678-4bc3-b405-c1ca79baefda" variableName="beerTypeObj" />
+		<set-variable value="#[%dw 2.0
+output application/java
+---
+vars.beerTypeList + vars.beerTypeObj]" doc:name="Add to BeerTypeList" doc:id="3a947188-42d0-497b-b34a-1cf1c59efbb7" variableName="beerTypeList"/>
+<set-variable value="#[%dw 2.0
+output application/java
+---
+{
+	Upc: vars.currElement.Item_ID,
+	Brand: vars.currElement.Brand,
+	Name: vars.currElement.Name,
+	BeerTypeID: vars.beerTypeObj.BeerTypeID as Number,
+	Taste: vars.currElement.Taste,
+	Abv: vars.currElement.ABV as Number,
+	Calories: vars.currElement.Calories as Number,
+	Origin: vars.currElement.Origin,
+	SubCat: vars.currElement.Subcategory,
+	ImageUrl: vars.currElement.ImageFilename,
+	Priority: vars.currElement.Priority as Number,
+	Seasonal: if (vars.currElement.Seasonal == &quot;false&quot;) 'F' else 'T',
+	Color: null
+}]" doc:name="BeerObj" doc:id="0fb65eec-6a24-447c-b9cf-468298bf6967" variableName="newBeerObj"/>
+		<set-variable value="#[%dw 2.0
+output application/java
+---
+vars.newBeerList + vars.newBeerObj]" doc:name="Add to NewBeerList" doc:id="361af113-b7e4-4746-ac85-58b10c27cc4c" variableName="newBeerList"/>
+				</when>
+				<otherwise >
+					<set-variable value="#[%dw 2.0
+output application/java
+---
+{
+	Brand: vars.currElement.Brand,
+	Name: vars.currElement.Name,
+	Taste: vars.currElement.Taste,
+	Abv: vars.currElement.ABV,
+	Calories: vars.currElement.Calories,
+	Origin: vars.currElement.Origin,
+	SubCat: vars.currElement.Subcategory,
+	ImageUrl: vars.currElement.ImageFilename,
+	Priority: vars.currElement.Priority,
+	Seasonal: vars.currElement.Seasonal,
+	Color: ''
+}]" doc:name="BeerObj" doc:id="a0c8a253-6353-4c56-b285-f192d8944ea4" variableName="existingBeerObj" />
+		<set-variable value="#[%dw 2.0
+output application/java
+---
+vars.existingBeerList + vars.existingBeerObj]" doc:name="Add to ExistingBeerList" doc:id="f0173c38-6b3a-4e0a-b97f-e0183f560bbc" variableName="existingBeerList" />
+				</otherwise>
+			</choice>
+			<logger level="INFO" doc:name="Logger" doc:id="64db5fcb-17cf-49f4-b0d1-f4fa1f6af92f" message="#[payload]"/>
+		</foreach>
+		<set-payload value="#[%dw 2.0
+
+output application/json
+
+---
+
+{
+	BeerGroup: vars.beerGroupList,
+	BeerType: vars.beerTypeList,
+	NewBeer: vars.newBeerList,
+	ExistingBeer: vars.existingBeerList
+}]" doc:name="Set Payload" doc:id="5926de52-4242-4f7c-afa7-5d0701970d5c" />
+		<http:request method="POST" doc:name="Invoke SAPI to Insert Tastry Info into CentralizedDB" doc:id="165bdd8e-ae3d-4ce7-b566-af7067812536" config-ref="HTTP_Request_config_CentralDB" path="/tastryinfo"/>
+	</flow>
+	<flow name="insertastryinfoFlow" doc:id="d249d5f5-5aca-4ee2-8ff1-70f85f30615f" >
+		<http:listener doc:name="SAPI to Insert Tastry Info into Centralilzed DB" doc:id="6faeefcd-045a-4cb9-92ed-fba68d80e1c3" config-ref="HTTP_Listener_config" path="/tastryinfo"/>
+		<set-variable value="#[%dw 2.0
+output application/json
+---
+payload.BeerGroup]" doc:name="BeerGroup List" doc:id="6b44bae7-c2f4-42a7-9f50-b0c60da81c8a" variableName="beeGroupList"/>
+		<set-variable value="#[%dw 2.0
+output application/json
+---
+payload.BeerType]" doc:name="BeerType List" doc:id="047be076-22b8-4489-926d-c8a034dbcc83" variableName="beerTypeList"/>
+		<set-variable value="#[%dw 2.0
+output application/json
+---
+payload.NewBeer]" doc:name="New Beer List" doc:id="d923b3bc-bd80-486a-9bad-b16c33f120e5" variableName="newBeerList"/>
+		<set-variable value="#[%dw 2.0
+output application/json
+---
+payload.NewBeer]" doc:name="Existing Beer List" doc:id="cbde646b-430c-4e75-9378-324db33121c6" variableName="existingBeerList"/>
+		<try doc:name="Try" doc:id="f0023542-9217-4eed-82b9-98840b698536" transactionalAction="ALWAYS_BEGIN">
+			<db:bulk-insert doc:name="Insert into 'BEER_GROUP' table" doc:id="8794f036-c9ec-4be0-81f1-d0726d0ee394" config-ref="CentralizedDB_Config">
+			<db:bulk-input-parameters><![CDATA[#[vars.beeGroupList]]]></db:bulk-input-parameters>
+			<db:sql>INSERT INTO [dbo].[BEER_GROUP] (BEER_GROUP_ID, BEER_GROUP_NAME) 
+ VALUES (:BeerGroupID, :BeerGroupName)</db:sql>
+		</db:bulk-insert>
+			<db:bulk-insert doc:name="Insert into 'BEER_TYPE' table" doc:id="75f6a685-e12f-4607-97db-600407e9e195" config-ref="CentralizedDB_Config">
+				<db:bulk-input-parameters ><![CDATA[#[vars.beerTypeList]]]></db:bulk-input-parameters>
+				<db:sql >  INSERT INTO [dbo].[BEER_TYPE] (BEER_TYPE_ID, NAME, BEER_GROUP_ID) 
+  VALUES (:BeerTypeID, :Name, :BeerGroupID)</db:sql>
+			</db:bulk-insert>
+			<db:bulk-insert doc:name="Insert into 'BEER' table" doc:id="740fd21c-d119-4228-b96d-3e4e0e0c1e6e" config-ref="CentralizedDB_Config">
+				<db:bulk-input-parameters ><![CDATA[#[vars.newBeerList]]]></db:bulk-input-parameters>
+				<db:sql >INSERT INTO [dbo].[BEER] ([UPC], [BRAND], [NAME], [BEER_TYPE_ID], [TASTE], [ABV], [CALORIES], [ORIGIN], [SUB_CATEGORY], [IMAGE_URL], [PRIORITY], [SEASONAL], [COLOR])
+VALUES(:Upc, :Brand, :Name, :BeerTypeID, :Taste, :Abv, :Calories, :Origin, :SubCat, :ImageUrl, :Priority, :Seasonal, :Color)</db:sql>
+			</db:bulk-insert>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="af54a301-f3ea-457f-b321-72c139a30b8b" >
+					<logger level="INFO" doc:name="Logger" doc:id="a7934428-96e5-4b11-993b-a96e3df9e175" message="Error in the Transaction Boundry"/>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Logger" doc:id="b5841bb1-ab89-436c-aee7-f4a138a6ae79" message="#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="Throw Error When Syntax Error" doc:id="e54872e8-15e5-44ed-a9a1-183dfba99fe8" type="DB:BAD_SQL_SYNTAX">
+				<logger level="INFO" doc:name="Logger" doc:id="accf3272-6900-4956-a024-7d56333e6a98" message="Syntax Error"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="aholdtastryintegrationprojFlow1" doc:id="c5e0dd78-5e12-4073-9db9-03583c7e6044" >
+		<http:listener doc:name="Listener" doc:id="c4bdacea-ea53-46a8-9ca1-89f9d14cfe43" config-ref="HTTP_Listener_config" path="/integration/tastry"/>
+		<http:request method="GET" doc:name="Request" doc:id="46981762-78b5-4a12-9a0e-a48917a2bcd4" config-ref="HTTP_Request_config_Tastry" path="/v1/beers/dump">
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	Authorization : 'Bearer H3VW2MS7Q0KZS8C',
+	Accept : 'application/json'
+}]]]></http:headers>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	format : 'json'
+}]]]></http:query-params>
+		</http:request>
+		<logger level="ERROR" doc:name="Logger" doc:id="526574fa-f94e-42f8-a4f0-f23d24cede8e" message="#[payload]"/>
+	</flow>
+</mule>

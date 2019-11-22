@@ -1,0 +1,51 @@
+{
+"TastryData":
+[
+  {
+    "ABV": 7,
+    "BeerSubCategoryID": 4,
+    "Brand": "21st Amendment",
+    "Calories": 190,
+    "Category": "India Pale Ale",
+    "Food_Pairings": [
+      {
+        "category": "Meats",
+        "food": "Beef"
+      },
+      {
+        "category": "Cheese",
+        "food": "Cheese"
+      },
+      {
+        "category": "Meats",
+        "food": "Poultry"
+      },
+      {
+        "category": "International",
+        "food": "Spicy Dishes"
+      }
+    ],
+    "ImageFilename": "565535_id_1_img.png",
+    "ImageURI": "",
+    "Item_ID": "565535",
+    "Name": "21st Brew Free or Die IPA",
+    "Origin": "San Francisco, CA",
+    "Priority": 0,
+    "Seasonal": false,
+    "Store_Numbers": {
+      "ss": [
+        526,
+        551,
+        554,
+        558,
+        579,
+        583
+      ]
+    },
+    "SubType": null,
+    "Subcategory": "India Pale Ale",
+    "Taste": "Hoppy and Bitter",
+    "UPC": "85961200103"
+  }
+]
+}

@@ -1,0 +1,84 @@
+{
+  "BeerGroup": [
+    {
+      "BeerGroupID": 36,
+      "BeerGroupName": "Wheat"
+    },
+    {
+      "BeerGroupID": 36,
+      "BeerGroupName": "Wheat"
+    }
+  ],
+  "BeerType": [
+    {
+      "BeerTypeID": 36,
+      "Name": "Hefeweizen",
+      "BeerGroupID": 36
+    },
+    {
+      "BeerTypeID": 36,
+      "Name": "Hefeweizen",
+      "BeerGroupID": 36
+    }
+  ],
+  "NewBeer": [
+    {
+      "Upc": "615989",
+      "Brand": "Magic Hat Brewing Company",
+      "Name": "Zirkus Boy",
+      "BeerTypeID": 36,
+      "Taste": "Fruity and Flavorful",
+      "Abv": 4.5,
+      "Calories": 155,
+      "Origin": "South Burlington, VT United States",
+      "SubCat": "Hefeweizen",
+      "ImageUrl": "615989_id_565_img.png",
+      "Priority": 0,
+      "Seasonal": false,
+      "Color": ""
+    },
+    {
+      "Upc": "615989",
+      "Brand": "Magic Hat Brewing Company",
+      "Name": "Zirkus Boy",
+      "BeerTypeID": 36,
+      "Taste": "Fruity and Flavorful",
+      "Abv": 4.5,
+      "Calories": 155,
+      "Origin": "South Burlington, VT United States",
+      "SubCat": "Hefeweizen",
+      "ImageUrl": "615989_id_565_img.png",
+      "Priority": 0,
+      "Seasonal": false,
+      "Color": ""
+    }
+  ],
+  "ExistingBeer": [
+    {
+      "Brand": "21st Amendment",
+      "Name": "21st Brew Free or Die IPA",
+      "Taste": "Hoppy and Bitter",
+      "Abv": 7,
+      "Calories": 190,
+      "Origin": "San Francisco, CA",
+      "SubCat": "India Pale Ale",
+      "ImageUrl": "565535_id_1_img.png",
+      "Priority": 0,
+      "Seasonal": false,
+      "Color": ""
+    },
+    {
+      "Brand": "Allagash",
+      "Name": "Allagash Hoppy Table Beer",
+      "Taste": "Fruity and Flavorful",
+      "Abv": 4.8,
+      "Calories": 150,
+      "Origin": "Portland, ME",
+      "SubCat": "Belgian Ale",
+      "ImageUrl": "762900_id_3_img.png",
+      "Priority": 0,
+      "Seasonal": false,
+      "Color": ""
+    }
+  ]
+}
