@@ -1,0 +1,46 @@
+[
+  {
+    "STORE_NUMBER": "544",
+    "ITEM_ID": "923410",
+       "UPC": "8248812910",
+    "ITEM_NAME": "BECKS OCTFST 6P 12Z B",
+    "BEER_CAT_ID": "888",
+    "BEER_SUBCAT_ID": "888012",
+    "BEER_CAT_NAME": "BEER",
+    "BEER_SUBCAT_NAME": "IMPORT BEER",
+    "STATUS": "A"
+  },
+  {
+    "STORE_NUMBER": "544",
+    "ITEM_ID": "549048",
+    "UPC": "1820019984",
+    "ITEM_NAME": "BECKS SAPHIRE 12P 12Z B",
+    "BEER_CAT_ID": "888",
+    "BEER_SUBCAT_ID": "888012",
+    "BEER_CAT_NAME": "BEER",
+    "BEER_SUBCAT_NAME": "IMPORT BEER",
+    "STATUS": "A"
+  },
+  {
+    "STORE_NUMBER": "544",
+    "ITEM_ID": "548873",
+    "UPC": "1820018996",
+    "ITEM_NAME": "BECKS SAPHRE 6P 12Z BTL",
+    "BEER_CAT_ID": "888",
+    "BEER_SUBCAT_ID": "888012",
+    "BEER_CAT_NAME": "BEER",
+    "BEER_SUBCAT_NAME": "IMPORT BEER",
+    "STATUS": "A"
+  },
+  {
+    "STORE_NUMBER": "544",
+    "ITEM_ID": "541941",
+    "UPC": "74052210083",
+    "ITEM_NAME": "BELLS 2 HEARTED 6PK 12Z",
+    "BEER_CAT_ID": "888",
+    "BEER_SUBCAT_ID": "888009",
+    "BEER_CAT_NAME": "BEER",
+    "BEER_SUBCAT_NAME": "CRAFT BEER",
+    "STATUS": "A"
+  }
+]
