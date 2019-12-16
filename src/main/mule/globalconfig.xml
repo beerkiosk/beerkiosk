@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+	
+		<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="fbe62814-f808-4610-8b40-32dd9bdf85fc" basePath="centralizeddb">
+		<http:listener-connection host="localhost" port="8081" />
+	</http:listener-config>
+	<db:config name="CentralizedDB_Config" doc:name="Database Config" doc:id="ab74e608-ae4a-4799-aa71-60aa8c328760" >
+		<db:mssql-connection host="rs06ue2dbeerkiosk-sql01.database.windows.net" user="dbadmin" password="1!donwant2b@pirate" databaseName="BeerKioskdatabase" />
+	</db:config>
+	<http:request-config name="HTTP_Request_config_Tastry" doc:name="HTTP Request configuration" doc:id="fffe48c5-8d22-481d-b6dd-b20c6dc2a0c1" basePath="/api">
+		<http:request-connection protocol="HTTPS" host="portal.tastry.com" />
+	</http:request-config>
+	<http:request-config name="HTTP_Request_config_CentralDB" doc:name="HTTP Request configuration" doc:id="6b67d77b-282d-4ba0-8fcc-8d0640fce4ac" basePath="/centralizeddb" responseTimeout="500000">
+		<http:request-connection host="localhost" port="8081" connectionIdleTimeout="60000"/>
+	</http:request-config>
+	<http:listener-config name="HTTP_Listener_config1" doc:name="HTTP Listener config" doc:id="1a22944c-3ffa-49c5-829f-aa18e7aed644" basePath="tastrydata">
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_Config_TastryMock" doc:name="HTTP Request configuration" doc:id="8e7417a7-2e21-4573-8937-a5ed7d6b5fca" basePath="/tastrymock" >
+		<http:request-connection host="localhost" port="8083" />
+	</http:request-config>
+	<http:listener-config name="HTTP_Listener_Config_TastryMock" doc:name="HTTP Listener config" doc:id="ef583547-51f3-4f20-b9b9-7a03f813f808" basePath="/tastrymock" >
+		<http:listener-connection host="localhost" port="8083" />
+	</http:listener-config>
+	
+</mule>

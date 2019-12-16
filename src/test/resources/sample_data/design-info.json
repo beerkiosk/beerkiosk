@@ -2,6 +2,22 @@
   "sampleData": {
     "95148fa5-2bda-4cff-a59e-dc578f1993a9": {
       "payload": "sample_data/list_object.dwl"
+    },
+    "1c25cebf-e65f-4509-88a7-42278a91c7f8": {
+      "payload": "sample_data/list_defaultstringtype.json"
+    },
+    "6eeb0315-5826-4c48-a5da-45e10a6e0812": {
+      "payload": "sample_data/list_defaultstringtype_1.json"
+    },
+    "c2989ad4-7de8-4c9d-9aea-af27779e9d7a": {
+      "payload": "sample_data/list_json.json"
+    },
+    "4a9e0615-38f3-4ed5-b2c7-74e7fe287862": {
+      "payload": "sample_data/list_defaultstringtype_2.json"
+    },
+    "b9a79b0e-c691-4541-8c55-6b62cc260974": {
+      "payload": "sample_data/unknown.dwl",
+      "vars-subCurrElement": "sample_data/unknown_1.dwl"
     }
   }
 }

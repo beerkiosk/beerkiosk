@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<flow name="deltaextractfetchFlow" doc:id="045bc205-8e04-4f37-9ae1-e6851c2a1542" >
+		<http:listener doc:name="SAPI to Fetch Delta Extract if available" doc:id="8383230f-60f0-4540-9537-f4f247940823" config-ref="HTTP_Listener_config" path="/deltaextractfetch"/>
+		<db:select doc:name="Query to Fetch Differential Data" doc:id="cfe71dcb-db24-450f-845c-dda2c324f3af" config-ref="CentralizedDB_Config">
+			<db:sql >SELECT BS.STORE_NUMBER, BS.ITEM_ID, BS.UPC, BS.ITEM_NAME, BS.BEER_CAT_ID, BS.BEER_SUBCAT_ID, BS.BEER_CAT_NAME, BS.BEER_SUBCAT_NAME, NEWDELETEDBEER.STATUS
+FROM
+(
+    (
+     SELECT STORE_NUMBER, UPC, 'A' STATUS FROM BEERSTAGE
+     EXCEPT
+     SELECT STORE_NUMBER, UPC, 'A' STATUS FROM STORE_BEER
+    )
+
+    UNION
+
+    (
+     SELECT STORE_NUMBER, UPC, 'D' STATUS FROM STORE_BEER 
+     EXCEPT
+     SELECT STORE_NUMBER, UPC, 'D' STATUS FROM BEERSTAGE
+    )
+) AS NEWDELETEDBEER
+
+ JOIN
+
+ BEERSTAGE BS ON NEWDELETEDBEER.STORE_NUMBER = BS.STORE_NUMBER
+                                AND
+                                NEWDELETEDBEER.UPC = BS.UPC</db:sql>
+		</db:select>
+		<set-payload value="#[%dw 2.0
+
+output application/json
+
+---
+payload]" doc:name="Set Payload" doc:id="6afa891d-2baf-4b1b-aee0-65287f4fd057" />
+		<logger level="INFO" doc:name="Logger" doc:id="9bab0063-ff59-4748-8ca3-a12073bd5289" message="#[payload]"/>
+	</flow>
+	
+	<flow name="aholdtastryintegrationprojFlow4" doc:id="7945c9e5-5636-4de6-87b4-9b3c474d4e2f" >
+		<http:listener doc:name="SAPI to Fetch PK if a record exists for a given field" doc:id="d3391c3c-894b-4d82-af51-1fffc98c54af" config-ref="HTTP_Listener_config" path="/tables/{table_name}/{col_name}/{col_val}"/>
+		<db:select doc:name="Query to Fetch PK if a record exists for a given field" doc:id="c1b4f6ef-843b-4a1a-a4e6-2df3732e37f2" config-ref="CentralizedDB_Config">
+			<db:sql >#[&quot;SELECT $(attributes.queryParams.pkcol_name) as pk FROM $(attributes.uriParams.table_name) WHERE upper(trim($(attributes.uriParams.col_name))) = upper(trim(:colval_param))&quot;]</db:sql>
+			<db:input-parameters ><![CDATA[#[{'colval_param':attributes.uriParams.col_val}]]]></db:input-parameters>
+		</db:select>
+		<set-payload value="#[%dw 2.0
+
+output application/json
+
+---
+payload.pk[0]]" doc:name="Set the Required Result" doc:id="40d74e68-4438-46c9-b470-8107182fef30" />
+		<logger level="INFO" doc:name="Log the Result" doc:id="728d2948-054b-469c-9dc1-bc8a765f124a" message="#[payload]"/>
+	</flow>
+	<flow name="aholdtastryintegrationdbapisFlow" doc:id="ee46e5f8-7036-423c-ab0f-aa6de6a62b7e" >
+		<http:listener doc:name="SAPI to Check if a record exists for a given PK" doc:id="87727e91-5de6-4f1a-bea1-7a42755d6020" config-ref="HTTP_Listener_config" path="/tables/{table_name}"/>
+		<db:select doc:name="Query to check for a given PK" doc:id="4a343e89-3484-43b2-b50f-1a11ee450db6" config-ref="CentralizedDB_Config">
+			<db:sql >#[ &quot; SELECT * FROM $(attributes.uriParams.table_name) WHERE $(payload.pkColName) = :pkcolval_param &quot; ]	</db:sql>
+			<db:input-parameters ><![CDATA[#[{`pkcolval_param`:payload.pkColVal}]]]></db:input-parameters>
+
+		</db:select>
+		<ee:transform doc:name="Return 'true' or 'false' based on the Query Result" doc:id="8fc03f98-fe9f-431e-8221-1e6299966fd6" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+---
+{
+	isRecordPresent:
+		if (payload == null or isEmpty(payload)) 
+			false
+		else
+			true
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Log the result" doc:id="73950153-468d-449b-96e5-c0ab411db38d" message="payload"/>
+	</flow>
+	
+	<flow name="aholdtastryintegrationdbapisFlow1" doc:id="e8c2c641-6a97-41da-b8ca-94dd8bb84b60" >
+		<http:listener doc:name="SAPI to Filter Non Existing Records" doc:id="32f5d1bc-dca0-4d6c-9edf-3db74ba940f6" config-ref="HTTP_Listener_config" path="/{table_name}/{col_name}/filter"/>
+		<ee:transform doc:name="InClause" doc:id="1c25cebf-e65f-4509-88a7-42278a91c7f8" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="inClause" ><![CDATA[%dw 2.0
+output application/json
+---
+payload map ":arg$$" reduce ((item, accumulator) -> accumulator ++ ", " ++ item)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="InputParams" doc:id="6eeb0315-5826-4c48-a5da-45e10a6e0812" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="inputParams" ><![CDATA[%dw 2.0
+output application/java
+---
+payload map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumulator)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<db:select doc:name="Query to Fetch Distinct Existing Records" doc:id="640ed160-542a-4052-9617-5c99b810aa09" config-ref="CentralizedDB_Config">
+			<db:sql >#[ &quot; SELECT DISTINCT $(attributes.uriParams.col_name) FROM $(attributes.uriParams.table_name) WHERE $(attributes.uriParams.col_name) IN ( $(vars.inClause) ) &quot; ]	</db:sql>
+			<db:input-parameters ><![CDATA[#[vars.inputParams]]]></db:input-parameters>
+		</db:select>
+		<set-payload value="#[%dw 2.0
+
+output application/json
+---
+
+payload.STORE_NUMBER]" doc:name="Set Payload" doc:id="c2989ad4-7de8-4c9d-9aea-af27779e9d7a" />
+	</flow>
+	<flow name="insertastryinfoFlow" doc:id="8731c9a6-b84e-44b8-821a-ac459b004c26" >
+		<http:listener doc:name="SAPI to Insert Tastry Info into Centralilzed DB" doc:id="2144dff1-5dfc-46a7-9625-50904ce907d3" config-ref="HTTP_Listener_config" path="/tastryinfo"/>
+		<set-variable value="#[%dw 2.0
+output application/json
+---
+payload.BeerGroup]" doc:name="BeerGroup List" doc:id="97fe6ab6-81ef-48c2-86f5-79469a359067" variableName="beeGroupList"/>
+		<set-variable value="#[%dw 2.0
+output application/json
+---
+payload.BeerType]" doc:name="BeerType List" doc:id="f8b1e952-9b7e-404e-ad45-67b201481091" variableName="beerTypeList"/>
+		<set-variable value="#[%dw 2.0
+output application/json
+---
+payload.NewBeer]" doc:name="New Beer List" doc:id="29f60d6d-29b3-47c7-93eb-0c2856d65917" variableName="newBeerList"/>
+		<set-variable value="#[%dw 2.0
+output application/json
+---
+payload.NewBeer]" doc:name="Existing Beer List" doc:id="c4a2bbd2-7701-4802-bb59-fffd713e7972" variableName="existingBeerList"/>
+		<try doc:name="Try" doc:id="61ee9cac-e8f1-4d0c-ae74-b9d51ad543f2" transactionalAction="ALWAYS_BEGIN">
+			<db:bulk-insert doc:name="Insert into 'BEER_GROUP' table" doc:id="1a55c544-c9b9-498f-b021-a702f4445aef" config-ref="CentralizedDB_Config">
+			<db:bulk-input-parameters><![CDATA[#[vars.beeGroupList]]]></db:bulk-input-parameters>
+			<db:sql>INSERT INTO [dbo].[BEER_GROUP] (BEER_GROUP_ID, BEER_GROUP_NAME) 
+ VALUES (:BeerGroupID, :BeerGroupName)</db:sql>
+		</db:bulk-insert>
+			<db:bulk-insert doc:name="Insert into 'BEER_TYPE' table" doc:id="702b6925-e80f-4cf6-b9c3-9a6199dc0e3f" config-ref="CentralizedDB_Config">
+				<db:bulk-input-parameters ><![CDATA[#[vars.beerTypeList]]]></db:bulk-input-parameters>
+				<db:sql >  INSERT INTO [dbo].[BEER_TYPE] (BEER_TYPE_ID, NAME, BEER_GROUP_ID) 
+  VALUES (:BeerTypeID, :Name, :BeerGroupID)</db:sql>
+			</db:bulk-insert>
+			<db:bulk-insert doc:name="Insert into 'BEER' table" doc:id="4f4cc66c-2bb5-4615-8c8b-db3e06a32dcf" config-ref="CentralizedDB_Config">
+				<db:bulk-input-parameters ><![CDATA[#[vars.newBeerList]]]></db:bulk-input-parameters>
+				<db:sql >INSERT INTO [dbo].[BEER] ([UPC], [BRAND], [NAME], [BEER_TYPE_ID], [TASTE], [ABV], [CALORIES], [ORIGIN], [SUB_CATEGORY], [IMAGE_URL], [PRIORITY], [SEASONAL], [COLOR])
+VALUES(:Upc, :Brand, :Name, :BeerTypeID, :Taste, :Abv, :Calories, :Origin, :SubCat, :ImageUrl, :Priority, :Seasonal, :Color)</db:sql>
+			</db:bulk-insert>
+			<db:bulk-delete doc:name="Delete from 'STORE_BEER' table" doc:id="6b121ea9-c056-433c-940f-5b3be1dd8092" config-ref="CentralizedDB_Config">
+				<db:bulk-input-parameters ><![CDATA[#[upc: vars.beeGroupList]]]></db:bulk-input-parameters>
+				<db:sql >DELETE FROM STORE_BEER WHERE UPC = :	upc_param</db:sql>
+			</db:bulk-delete>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ec9efff0-0df9-4f19-966a-7391042f0c6b" >
+					<logger level="INFO" doc:name="Logger" doc:id="089cb49f-123d-4d6f-aabc-b4873b77760a" message="Error in the Transaction Boundry"/>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Logger" doc:id="0e01937e-2a6b-4d34-afec-0510bccaa5e1" message="#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="Throw Error When Syntax Error" doc:id="b7d2f600-6ccb-4edd-a9ad-35a9001ca962" type="DB:BAD_SQL_SYNTAX">
+				<logger level="INFO" doc:name="Logger" doc:id="f877c7fd-bf2c-47e1-81d1-654d8833c821" message="Syntax Error"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	
+	<flow name="aholdtastryintegrationprojFlow2" doc:id="079261c5-63f6-40c7-94ab-b35d378badd7" >
+		<http:listener doc:name="SAPI to Fetch Image Path" doc:id="2179dc15-0240-46c5-9c49-e06998a5cd3d" config-ref="HTTP_Listener_config" path="/tables/{table_name}/{attr_name}"/>
+		<db:select doc:name="Query to fetch Config value for a given key attribute" doc:id="a8e368f2-b96a-4479-a489-ea99d9033c35" config-ref="CentralizedDB_Config">
+			<db:sql >#[&quot;SELECT VALUE FROM $(attributes.uriParams.table_name) WHERE ATTR = :attr_param&quot;]</db:sql>
+			<db:input-parameters ><![CDATA[#[{`attr_param`: attributes.uriParams.attr_name}]]]></db:input-parameters>
+		</db:select>
+		<set-payload value="#[%dw 2.0
+output application/json
+---
+
+payload[0].value]" doc:name="Set the Result" doc:id="c21e1071-7ca8-466b-bce5-ffa806659edf" />
+		<logger level="INFO" doc:name="Log the Result" doc:id="58711f9f-2119-4673-aeb7-59471d9b5608" message="Query Result: #[payload]"/>
+	</flow>
+	<flow name="aholdtastryintegrationprojFlow3" doc:id="9760ea4f-2781-49ba-9c3b-b63073a4e909" >
+		<http:listener doc:name="SAPI to Fetch Next Value of a Sequence" doc:id="1f140f0e-ffbf-484d-bcf7-bb0fe058ad66" config-ref="HTTP_Listener_config" path="/sequences/{seq_name}"/>
+		<set-variable value="#[attributes.uriParams.seq_name]" doc:name="Set the Sequence Name" doc:id="739e5c9a-1efc-4d88-a40a-827e1ec50210" variableName="seqName"/>
+		<db:select doc:name="Query to Fetch Next Value from the given Sequence" doc:id="cf9dfa9e-349c-477b-bee7-c24aac91f2d7" config-ref="CentralizedDB_Config">
+			<db:sql >#[&quot;SELECT NEXT VALUE FOR $(vars.seqName) AS SEQ_VAL&quot;] </db:sql>
+		</db:select>
+		<set-payload value="#[%dw 2.0
+output application/json
+---
+
+payload[0].seq_val]" doc:name="Set the Result" doc:id="990577c0-7221-467b-a02e-b5a432444686" />
+		<logger level="INFO" doc:name="Log the Result" doc:id="e0335308-6cc3-4067-8748-12fa04a01bb6" message="Next Value from Seq.: #[vars.seqName]: #[payload]"/>
+	</flow>
+	<flow name="aholdtastryintegrationprojsapiFlow" doc:id="7cfcd561-c47f-45de-9d89-4d693b377d17" >
+		<http:listener doc:name="SAPI to fetch list of UPC from STORE_BEER table which are to be removed" doc:id="b1812508-2e9f-4285-a819-647061553d82" config-ref="HTTP_Listener_config" path="/unwantedbeerlist"/>
+		<db:select doc:name="Query to fetch Beers to be removed" doc:id="3655f594-4692-4b11-9e6f-129a7712387e" config-ref="CentralizedDB_Config">
+			<db:sql >SELECT BEER_STORE_ID
+FROM
+(
+    SELECT STORE_NUMBER, UPC FROM STORE_BEER 
+    EXCEPT
+    SELECT STORE_NUMBER, UPC FROM BEERSTAGE
+) REMOVEDBEER
+JOIN STORE_BEER SB
+        ON SB.STORE_NUMBER = REMOVEDBEER.STORE_NUMBER
+              AND
+              SB.UPC = REMOVEDBEER.UPC</db:sql>
+		</db:select>
+		<set-payload value="#[%dw 2.0
+output application/json
+
+---
+
+payload.BEER_STORE_ID]" doc:name="Set Payload" doc:id="e064fa64-c59a-4b18-a8ed-4fdc6d5d90ae" />
+		<logger level="INFO" doc:name="Log the Result" doc:id="e323da9f-ddf7-46b8-a69c-4d0f964be89c" message="#[payload]"/>
+	</flow>
+</mule>

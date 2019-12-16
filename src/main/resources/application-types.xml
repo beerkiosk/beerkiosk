@@ -40,6 +40,27 @@ type parsedtastryinfo = {|
 
 ]]></types:shape>
     </types:type>
+    <types:type name="inclausedata" format="json">
+      <types:shape format="weave" example="examples/inclausedata.json"><![CDATA[%dw 2.0
+
+type inclausedata = Array<String> {"example": "[\"700\",\"560\"]"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="sampledata1" format="json">
+      <types:shape format="weave" example="examples/sampledata1.json"><![CDATA[%dw 2.0
+
+type sampledata1 = Array<{| STORE_NUMBER: String |}> {"example": "[{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"},{\"STORE_NUMBER\":\"560\"}]"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="foodgrouplist" format="json">
+      <types:shape format="weave" example="examples/sampledata2.json"><![CDATA[%dw 2.0
+
+type foodgrouplist = Array<{|  FoodGroupID: Number {"typeId": "int"},   Name: String|}> {"example": "[{\"FoodGroupID\":54,\"Name\":\"Meats\"},{\"FoodGroupID\":56,\"Name\":\"International\"}]"}
+
+]]></types:shape>
+    </types:type>
   </types:catalog>
   <types:enrichment select="#95148fa5-2bda-4cff-a59e-dc578f1993a9">
     <types:processor-declaration>
@@ -91,6 +112,51 @@ type parsedtastryinfo = {|
       <types:input-event>
         <types:message>
           <types:payload type="DeltaExtract"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#1c25cebf-e65f-4509-88a7-42278a91c7f8">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="inclausedata"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#6eeb0315-5826-4c48-a5da-45e10a6e0812">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="inclausedata"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#c2989ad4-7de8-4c9d-9aea-af27779e9d7a">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="sampledata1"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#4a9e0615-38f3-4ed5-b2c7-74e7fe287862">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="inclausedata"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#b9a79b0e-c691-4541-8c55-6b62cc260974">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="foodgrouplist"/>
         </types:message>
       </types:input-event>
     </types:processor-declaration>
