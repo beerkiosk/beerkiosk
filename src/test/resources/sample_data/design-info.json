@@ -18,6 +18,9 @@
     "b9a79b0e-c691-4541-8c55-6b62cc260974": {
       "payload": "sample_data/unknown.dwl",
       "vars-subCurrElement": "sample_data/unknown_1.dwl"
+    },
+    "05d838e6-00e4-474c-b125-2a39593419b0": {
+      "payload": "sample_data/list_json_1.json"
     }
   }
 }
