@@ -83,6 +83,7 @@ output application/json skipNullOn="everywhere"
 	
 	<flow name="aholdtastryintegrationdbapisFlow1" doc:id="e8c2c641-6a97-41da-b8ca-94dd8bb84b60" >
 		<http:listener doc:name="SAPI to Filter Non Existing Records" doc:id="32f5d1bc-dca0-4d6c-9edf-3db74ba940f6" config-ref="HTTP_Listener_config" path="/{table_name}/{col_name}/filter"/>
+		<logger level="INFO" doc:name="Logger" doc:id="054d7066-7ba1-4d76-99fc-86f47a9955c9" message="Table name: #[attributes.uriParams.table_name]  Col Name: #[attributes.uriParams.col_name]"/>
 		<ee:transform doc:name="InClause" doc:id="1c25cebf-e65f-4509-88a7-42278a91c7f8" >
 			<ee:message >
 			</ee:message>
@@ -98,11 +99,12 @@ payload map ":arg$$" reduce ((item, accumulator) -> accumulator ++ ", " ++ item)
 			</ee:message>
 			<ee:variables >
 				<ee:set-variable variableName="inputParams" ><![CDATA[%dw 2.0
-output application/java
+output application/json
 ---
 payload map {"arg$$" : $} reduce ((item, accumulator = {}) -> item ++ accumulator)]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="e969b022-0c68-435e-99e6-ee2734f49965" message="InClause: #[vars.inClause]  InputParams: #[vars.inputParams]"/>
 		<db:select doc:name="Query to Fetch Distinct Existing Records" doc:id="640ed160-542a-4052-9617-5c99b810aa09" config-ref="CentralizedDB_Config">
 			<db:sql >#[ &quot; SELECT DISTINCT $(attributes.uriParams.col_name) FROM $(attributes.uriParams.table_name) WHERE $(attributes.uriParams.col_name) IN ( $(vars.inClause) ) &quot; ]	</db:sql>
 			<db:input-parameters ><![CDATA[#[vars.inputParams]]]></db:input-parameters>
@@ -116,42 +118,51 @@ payload.STORE_NUMBER]" doc:name="Set Payload" doc:id="c2989ad4-7de8-4c9d-9aea-af
 	</flow>
 	<flow name="insertastryinfoFlow" doc:id="8731c9a6-b84e-44b8-821a-ac459b004c26" >
 		<http:listener doc:name="SAPI to Insert Tastry Info into Centralilzed DB" doc:id="2144dff1-5dfc-46a7-9625-50904ce907d3" config-ref="HTTP_Listener_config" path="/tastryinfo"/>
-		<set-variable value="#[%dw 2.0
-output application/json
----
-payload.BeerGroup]" doc:name="BeerGroup List" doc:id="97fe6ab6-81ef-48c2-86f5-79469a359067" variableName="beeGroupList"/>
-		<set-variable value="#[%dw 2.0
-output application/json
----
-payload.BeerType]" doc:name="BeerType List" doc:id="f8b1e952-9b7e-404e-ad45-67b201481091" variableName="beerTypeList"/>
-		<set-variable value="#[%dw 2.0
-output application/json
----
-payload.NewBeer]" doc:name="New Beer List" doc:id="29f60d6d-29b3-47c7-93eb-0c2856d65917" variableName="newBeerList"/>
-		<set-variable value="#[%dw 2.0
-output application/json
----
-payload.NewBeer]" doc:name="Existing Beer List" doc:id="c4a2bbd2-7701-4802-bb59-fffd713e7972" variableName="existingBeerList"/>
 		<try doc:name="Try" doc:id="61ee9cac-e8f1-4d0c-ae74-b9d51ad543f2" transactionalAction="ALWAYS_BEGIN">
+			<db:bulk-delete doc:name="Delete from 'STORE_BEER' table" doc:id="6b121ea9-c056-433c-940f-5b3be1dd8092" config-ref="CentralizedDB_Config">
+				<db:bulk-input-parameters><![CDATA[#[upc_param: vars.beeGroupList]]]></db:bulk-input-parameters>
+				<db:sql>DELETE FROM STORE_BEER WHERE UPC = :	upc_param</db:sql>
+			</db:bulk-delete>
 			<db:bulk-insert doc:name="Insert into 'BEER_GROUP' table" doc:id="1a55c544-c9b9-498f-b021-a702f4445aef" config-ref="CentralizedDB_Config">
-			<db:bulk-input-parameters><![CDATA[#[vars.beeGroupList]]]></db:bulk-input-parameters>
+			<db:bulk-input-parameters><![CDATA[#[payload.BeerGroup]]]></db:bulk-input-parameters>
 			<db:sql>INSERT INTO [dbo].[BEER_GROUP] (BEER_GROUP_ID, BEER_GROUP_NAME) 
  VALUES (:BeerGroupID, :BeerGroupName)</db:sql>
 		</db:bulk-insert>
 			<db:bulk-insert doc:name="Insert into 'BEER_TYPE' table" doc:id="702b6925-e80f-4cf6-b9c3-9a6199dc0e3f" config-ref="CentralizedDB_Config">
-				<db:bulk-input-parameters ><![CDATA[#[vars.beerTypeList]]]></db:bulk-input-parameters>
+				<db:bulk-input-parameters ><![CDATA[#[payload.BeerType]]]></db:bulk-input-parameters>
 				<db:sql >  INSERT INTO [dbo].[BEER_TYPE] (BEER_TYPE_ID, NAME, BEER_GROUP_ID) 
   VALUES (:BeerTypeID, :Name, :BeerGroupID)</db:sql>
 			</db:bulk-insert>
 			<db:bulk-insert doc:name="Insert into 'BEER' table" doc:id="4f4cc66c-2bb5-4615-8c8b-db3e06a32dcf" config-ref="CentralizedDB_Config">
-				<db:bulk-input-parameters ><![CDATA[#[vars.newBeerList]]]></db:bulk-input-parameters>
+				<db:bulk-input-parameters ><![CDATA[#[payload.NewBeer]]]></db:bulk-input-parameters>
 				<db:sql >INSERT INTO [dbo].[BEER] ([UPC], [BRAND], [NAME], [BEER_TYPE_ID], [TASTE], [ABV], [CALORIES], [ORIGIN], [SUB_CATEGORY], [IMAGE_URL], [PRIORITY], [SEASONAL], [COLOR])
 VALUES(:Upc, :Brand, :Name, :BeerTypeID, :Taste, :Abv, :Calories, :Origin, :SubCat, :ImageUrl, :Priority, :Seasonal, :Color)</db:sql>
 			</db:bulk-insert>
-			<db:bulk-delete doc:name="Delete from 'STORE_BEER' table" doc:id="6b121ea9-c056-433c-940f-5b3be1dd8092" config-ref="CentralizedDB_Config">
-				<db:bulk-input-parameters ><![CDATA[#[upc: vars.beeGroupList]]]></db:bulk-input-parameters>
-				<db:sql >DELETE FROM STORE_BEER WHERE UPC = :	upc_param</db:sql>
-			</db:bulk-delete>
+			<db:bulk-insert doc:name="Insert into 'STORE_INFO' table" doc:id="4ab2b478-afc1-432a-a8a9-87f6cc4d6a66" config-ref="CentralizedDB_Config">
+				<db:bulk-input-parameters ><![CDATA[#[payload.StoreInfo]]]></db:bulk-input-parameters>
+				<db:sql >INSERT INTO [dbo].[STORE_INFO] (STORE_NUMBER, STORE_ID) 
+VALUES (:StoreNumber, :StoreID)</db:sql>
+			</db:bulk-insert>
+			<db:bulk-insert doc:name="Insert into 'STORE_BEER' table" doc:id="e9759515-792f-4ce2-a7a6-14cbf1ec137e" config-ref="CentralizedDB_Config">
+				<db:bulk-input-parameters ><![CDATA[#[payload.StoreBeer]]]></db:bulk-input-parameters>
+				<db:sql >INSERT INTO [dbo].[STORE_BEER] (BEER_STORE_ID, UPC, STORE_NUMBER) 
+VALUES (:BeerStoreID, :Upc, :StoreNumber)</db:sql>
+			</db:bulk-insert>
+			<db:bulk-insert doc:name="Insert into 'FOOD_GROUP' table" doc:id="0bd65fd5-1d52-4aca-b8fc-1f007a974897" config-ref="CentralizedDB_Config">
+				<db:bulk-input-parameters ><![CDATA[#[payload.FoodGroup]]]></db:bulk-input-parameters>
+				<db:sql >INSERT INTO [dbo].[FOOD_GROUP] (FOOD_GRP_ID, NAME) 
+VALUES (:FoodGroupID, :Name)</db:sql>
+			</db:bulk-insert>
+			<db:bulk-insert doc:name="Insert into 'SUB_FOOD_GROUP' table" doc:id="4f5fe840-9d9b-443b-bbb7-1ef8ec4b3e86" config-ref="CentralizedDB_Config">
+				<db:bulk-input-parameters ><![CDATA[#[payload.SubFoodGroup]]]></db:bulk-input-parameters>
+				<db:sql >INSERT INTO [dbo].[SUB_FOOD_GROUP] (SUB_FD_GRP_ID, NAME, FOOD_GRP_ID) 
+VALUES (:SubFoodGroupID, :Name, :FoodGroupID)</db:sql>
+			</db:bulk-insert>
+			<db:bulk-insert doc:name="Insert into 'PAIRING' table" doc:id="1dde8b1f-c8eb-4879-87f0-8f056798a19b" config-ref="CentralizedDB_Config">
+				<db:bulk-input-parameters ><![CDATA[#[payload.Pairings]]]></db:bulk-input-parameters>
+				<db:sql >INSERT INTO [dbo].[PAIRING] (PAIR_ID, UPC, FOOD_GRP_ID, SUB_FD_GRP_ID) 
+VALUES (:PairID, :Upc, :FoodGroupID, :SubFoodGroupID)</db:sql>
+			</db:bulk-insert>
 			<error-handler >
 				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ec9efff0-0df9-4f19-966a-7391042f0c6b" >
 					<logger level="INFO" doc:name="Logger" doc:id="089cb49f-123d-4d6f-aabc-b4873b77760a" message="Error in the Transaction Boundry"/>

@@ -24,7 +24,18 @@ output application/json
 ---
 {
   webhookURL: "http://2a3a28f6.ngrok.io/return-updated-json-here",
-  delta_extract: payload
+  delta_extract: 
+	  payload map ((item, index) -> {
+	  	BEER_CAT_NAME: trim(item.BEER_CAT_NAME),
+	  	ITEM_ID: trim(item.ITEM_ID),
+	  	STORE_NUMBER: trim(item.STORE_NUMBER),
+	  	UPC: trim(item.UPC),
+	  	ITEM_NAME: trim(item.ITEM_NAME),
+	  	BEER_CAT_ID: trim(item.BEER_CAT_ID),
+	  	BEER_SUBCAT_ID: trim(item.BEER_SUBCAT_ID),
+	  	BEER_SUBCAT_NAME: trim(item.BEER_SUBCAT_NAME),
+	  	STATUS: trim(item.STATUS)
+	  })
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
@@ -42,18 +53,11 @@ output application/json
 		<http:listener doc:name="Listener" doc:id="3a401730-c165-4e82-b435-d23c4b7d0d7f" config-ref="HTTP_Listener_config1" path="/pairingsinfo"/>
 		<http:request method="GET" doc:name="Invoke SAPI to fetch list of UPC from STORE_BEER table which are to be removed" doc:id="228dd3d7-a944-47a2-9abc-6276ac7b8bdd" config-ref="HTTP_Request_config_CentralDB" path="/unwantedbeerlist" target="storeBeerPKList"/>
 		<flow-ref doc:name="Call listInitializationFlow" doc:id="be4143f6-aa21-4837-bb64-fb7230adc323" name="listInitializationFlow" />
-		<set-payload value="#[%dw 2.0
-output application/json
----
-
-{
-  pkColName: 'UPC',
-  pkColVal: trim(vars.currElement.Item_ID) as String
-}]" doc:name="SAPI Request" doc:id="0bb9a058-ef03-4461-801a-0ea20895535c" />
-		<http:request method="GET" doc:name="Invoke SAPI to get Image Path" doc:id="f35daae0-b33d-4744-9196-3b383033dde2" config-ref="HTTP_Request_config_CentralDB" path="/tables/configtab/IMAGE_PATH" target="imagePath" />
+		<http:request method="GET" doc:name="Invoke SAPI to get Image Path" doc:id="f35daae0-b33d-4744-9196-3b383033dde2" config-ref="HTTP_Request_config_CentralDB" path="/tables/configtab/IMAGE_PATH" target="imagePath"/>
 		<foreach doc:name="For Each" doc:id="9d027f94-443d-43bf-a611-ada5a4224ece" >
 			
 			<set-variable value="#[payload]" doc:name="Current Element" doc:id="4c5ec319-abe5-4fc4-a9aa-668e8f375359" variableName="currElement"/>
+			<set-variable value="#[vars.currElement.Item_ID]" doc:name="Set Current Beer Item's UPC" doc:id="89a6a66d-c67b-4cfb-a8ca-654221206a69" variableName="currElementUpc"/>
 			<flow-ref doc:name="Invoke beerbeergroupbeertypeliscreationSubFlow" doc:id="37b9a082-c230-46a0-817d-87ba59463f0b" name="beerbeergroupbeertypelistcreationSubFlow" />
 			<logger level="INFO" doc:name="Logger" doc:id="64db5fcb-17cf-49f4-b0d1-f4fa1f6af92f" message="#[payload]"/>
 			<flow-ref doc:name="Invoke storebeerstoreinfolistcreationSubFlow" doc:id="ba0383ff-1c9c-4f7d-81da-d3af7fdcde9c" name="storebeerstoreinfolistcreationSubFlow" />
@@ -122,6 +126,14 @@ output application/java
 
 
 <sub-flow name="beerbeergroupbeertypelistcreationSubFlow" doc:id="963f496e-e21e-4514-a223-b667a887265b" >
+		<set-payload value="#[%dw 2.0
+output application/json
+---
+
+{
+  pkColName: 'UPC',
+  pkColVal: trim(vars.currElement.Item_ID) as String
+}]" doc:name="SAPI Request" doc:id="0bb9a058-ef03-4461-801a-0ea20895535c" />
 		<http:request method="POST" doc:name="Invoke SAPI to Check if Beer is Already Available" doc:id="3bcce35c-2904-42c4-b425-72aaf71dbc6d" config-ref="HTTP_Request_config_CentralDB" path="/tables/beer">
 			</http:request>
 		<choice doc:name="Check if Current Beer is Already Available or not" doc:id="999f259e-e65c-4b5f-9a5c-75c0b3fa656b">
@@ -131,7 +143,7 @@ output application/java
 ---
 
 {
-	BeerGroupID: vars.currElement.BeerCategoryID as Number,
+	BeerGroupID: vars.currElement.BeerSubCategoryID as Number,
 	BeerGroupName: vars.currElement.Category
 }]" doc:name="BeerGroupObj" doc:id="ff3f6b27-5cd4-4fa2-bf5d-f1de82e77328" variableName="beerGroupObj" />
 		<set-variable value="#[%dw 2.0
@@ -180,6 +192,7 @@ vars.newBeerList + vars.newBeerObj]" doc:name="Add to NewBeerList" doc:id="98b31
 output application/java
 ---
 {
+	Upc: vars.currElement.Item_ID,
 	Brand: vars.currElement.Brand,
 	Name: vars.currElement.Name,
 	Taste: vars.currElement.Taste,
@@ -187,40 +200,49 @@ output application/java
 	Calories: vars.currElement.Calories,
 	Origin: vars.currElement.Origin,
 	SubCat: vars.currElement.Subcategory,
-	ImageUrl: vars.imagePath ++ '/' ++ vars.currElement.ImageFilename,
+	ImageUrl: if (vars.currElement.ImageFilename != null) (vars.imagePath ++ vars.currElement.ImageFilename) else null,
 	Priority: vars.currElement.Priority,
 	Seasonal: vars.currElement.Seasonal,
 	Color: ''
-}]" doc:name="BeerObj" doc:id="6e29d6ba-3c98-4cf2-ac02-c924a2dbc256" variableName="existingBeerObj" />
+} filterObject ((value) -&gt; value != null)]" doc:name="ExistingBeerObj" doc:id="6e29d6ba-3c98-4cf2-ac02-c924a2dbc256" variableName="existingBeerObj" />
 		<set-variable value="#[%dw 2.0
 output application/java
 ---
-vars.existingBeerList + vars.existingBeerObj]" doc:name="Add to ExistingBeerList" doc:id="d7a5fbec-2419-4a9f-b3ae-8729be571cc9" variableName="existingBeerList" />
+
+if (vars.existingBeerObj != null)
+	vars.existingBeerList + vars.existingBeerObj
+else 
+	vars.existingBeerList]" doc:name="Add to ExistingBeerList" doc:id="d7a5fbec-2419-4a9f-b3ae-8729be571cc9" variableName="existingBeerList" />
 				</otherwise>
 			</choice>
 	</sub-flow>
 
 	<sub-flow name="storebeerstoreinfolistcreationSubFlow" doc:id="9a8f7c7a-d3a8-46a1-b101-4ee5fae0e0fa" >
-		<set-variable value="#[%dw 2.0
+		<choice doc:name="Choice" doc:id="73688428-419e-4b5c-8d67-a9343e9e62e2" >
+			<when expression="#[!isEmpty(vars.currElement.Store_Numbers.ss)]">
+				<set-variable value="#[%dw 2.0
 output application/json
 ---
 
 vars.currElement.Store_Numbers.ss map ((item, index) -&gt; {
 	element: item as String
-}.element)]" doc:name="All Store Nos List" doc:id="de93fbcc-afd9-403f-84dc-bb18b29646bc" variableName="storeNosList"/>
-		<set-payload value="#[vars.storeNosList]" doc:name="Set to All Store Nos List" doc:id="4a9e0615-38f3-4ed5-b2c7-74e7fe287862" />
-		<http:request method="POST" doc:name="Invoke SAPI to Filter Non Existing Records in STORE_INFO table" doc:id="55769387-de8b-479b-b313-f7e8f4c0aebe" path="/store_info/store_number/filter" config-ref="HTTP_Request_config_CentralDB"/>
-		<ee:transform doc:name="Find New Store Nos to Insert into STORE_INFO table" doc:id="7a516b1a-0980-4924-b6a5-ae6ee7b21f43" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
+}.element)]" doc:name="All Store Nos List" doc:id="de93fbcc-afd9-403f-84dc-bb18b29646bc" variableName="storeNosList" />
+				<set-payload value="#[vars.storeNosList]" doc:name="Set to All Store Nos List" doc:id="4a9e0615-38f3-4ed5-b2c7-74e7fe287862" />
+				<http:request method="POST" doc:name="Invoke SAPI to Filter Non Existing Records in STORE_INFO table" doc:id="55769387-de8b-479b-b313-f7e8f4c0aebe" path="/store_info/store_number/filter" config-ref="HTTP_Request_config_CentralDB" target="existingStoreList"/>
+				<ee:transform doc:name="Find New Store Nos to Insert into STORE_INFO table" doc:id="7a516b1a-0980-4924-b6a5-ae6ee7b21f43">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
 output application/json
 
 ---
 
-vars.storeNosList -- payload]]></ee:set-payload>
+if (!isEmpty(vars.existingStoreList))
+	(vars.storeNosList -- vars.existingStoreList)
+else 
+	vars.storeNosList]]></ee:set-payload>
 			</ee:message>
-			<ee:variables >
-				<ee:set-variable variableName="newStoreNosList" ><![CDATA[%dw 2.0
+			<ee:variables>
+				<ee:set-variable variableName="newStoreNosList"><![CDATA[%dw 2.0
 output application/json
 
 ---
@@ -228,8 +250,9 @@ output application/json
 vars.storeNosList -- payload]]></ee:set-variable>
 			</ee:variables>
 		</ee:transform>
-		<foreach doc:name="For Each" doc:id="6f83ee7f-ec21-4fe9-8f66-b49f5e7f695a" >
-			<set-variable value="#[%dw 2.0
+				<foreach doc:name="For Each" doc:id="6f83ee7f-ec21-4fe9-8f66-b49f5e7f695a">
+			<set-variable value="#[payload]" doc:name="Current Store Num" doc:id="0ab714f2-d49e-4c1c-a1d7-d42f5e1999e8" variableName="currentStoreNum" />
+					<set-variable value="#[%dw 2.0
 output application/java
 ---
 {
@@ -240,26 +263,8 @@ output application/java
 output application/java
 ---
 vars.storeInfoList + vars.storeInfoObj]" doc:name="Add to StoreInfoList" doc:id="9c8f2061-edf6-49de-a9f7-2b2045ceeacd" variableName="storeInfoList" />
-		</foreach>
-		<logger level="INFO" doc:name="Logger" doc:id="4536bdc5-30f4-455b-856d-14b661623891" message="#[vars.newStoreNosList]"/>
-		<set-payload value="#[vars.storeNosList]" doc:name="Set to All Store Nos List" doc:id="8b7bb5f0-9c2b-45a9-bd88-ba3da6c0e8f0" />
-		<http:request method="POST" doc:name="Invoke SAPI to Filter Non Existing Records in STORE_BEER table" doc:id="cee330f4-5702-4da0-8eb2-fcb15441e76a" config-ref="HTTP_Request_config_CentralDB" path="/store_beer/store_number/filter"/>
-		<ee:transform doc:name="Find New Store Nos to Insert into STORE_BEER table" doc:id="c6941d1b-7aeb-4e81-baf9-ce5835bf7ab8" >
-			<ee:message >
-				<ee:set-payload ><![CDATA[%dw 2.0
-output application/json
-
----
-
-vars.storeNosList -- payload]]></ee:set-payload>
-			</ee:message>
-			<ee:variables >
-			</ee:variables>
-		</ee:transform>
-		<foreach doc:name="For Each" doc:id="9002d534-b532-420a-b646-9abfa4f5605d" >
-			<set-variable value="#[payload]" doc:name="Current Store Num" doc:id="0ab714f2-d49e-4c1c-a1d7-d42f5e1999e8" variableName="currentStoreNum"/>
-			<http:request method="GET" doc:name="Invoke SAPI to Fetch Next Value of Sequence STORE_BEER_SEQ" doc:id="76e97984-ebbe-41a4-ab84-295bc2b0d012" config-ref="HTTP_Request_config_CentralDB" path="/sequences/store_beer_seq" />
-			<set-variable value="#[%dw 2.0
+					<http:request method="GET" doc:name="Invoke SAPI to Fetch Next Value of Sequence STORE_BEER_SEQ" doc:id="76e97984-ebbe-41a4-ab84-295bc2b0d012" config-ref="HTTP_Request_config_CentralDB" path="/sequences/store_beer_seq" />
+					<set-variable value="#[%dw 2.0
 output application/java
 ---
 {
@@ -267,11 +272,17 @@ output application/java
 	Upc: vars.currElement.Item_ID,
 	StoreNumber: vars.currentStoreNum
 }]" doc:name="StoreBeerObj" doc:id="624714b9-20e1-4fe8-8d31-6887e148a1b5" variableName="storeBeerObj" />
-			<set-variable value="#[%dw 2.0
+					<set-variable value="#[%dw 2.0
 output application/java
 ---
 vars.storeBeerList + vars.storeBeerObj]" doc:name="Add to StoreBeerList" doc:id="60ea5622-ef9b-4148-ad44-49b598cfcfdb" variableName="storeBeerList" />
 		</foreach>
+				<logger level="INFO" doc:name="Logger" doc:id="4536bdc5-30f4-455b-856d-14b661623891" message="#[payload]" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Store List is empty" doc:id="3aec4d30-74b8-4df0-8594-4c7f2269e838" />
+			</otherwise>
+		</choice>
 	</sub-flow>
 	<sub-flow name="foodgroupsubfoodgrouppairinglistcreationSubFlow" doc:id="0df787a7-2ca0-4064-87c3-6b8955b03f96" >
 		<set-variable value="#[vars.currElement.Food_Pairings]" doc:name="Food Pairings List" doc:id="7ca3916b-d906-4090-8203-6bfe23155da0" variableName="foodPairingsList"/>
@@ -328,7 +339,7 @@ var foodGrpList = vars.foodGroupList
 output application/java
 ---
 {
-	FoodGroupID: payload,
+	FoodGroupID: vars.foodGroupPK,
 	Name: vars.subCurrElement.category
 }]" doc:name="FoodGroupObj" doc:id="adf9d203-7fe9-4d6b-b662-0f28370d1245" variableName="foodGroupObj" />
 					<set-variable value="#[%dw 2.0
@@ -337,7 +348,7 @@ output application/java
 (vars.foodGroupList + vars.foodGroupObj) distinctBy $.Name]" doc:name="Add to FoodGroupList" doc:id="37381af1-fa75-4424-9be4-ace94c6d8bfd" variableName="foodGroupList" />
 				</when>
 				<otherwise >
-					<logger level="INFO" doc:name="Log that record exists in 'FOOD_GROUP' table" doc:id="2d284ea7-8616-463d-b76b-fc8e07fc6bfa" message="Record with 'NAME' #[vars.currElement.category] exists in 'FOOD_GROUP' table"/>
+					<logger level="INFO" doc:name="Log that record exists in 'FOOD_GROUP' table" doc:id="2d284ea7-8616-463d-b76b-fc8e07fc6bfa" message="Record with 'NAME' #[vars.subCurrElement.category] exists in 'FOOD_GROUP' table"/>
 				</otherwise>
 			</choice>
 			<http:request method="GET" doc:name="Invoke SAPI to Fetch PK if a record exists for a 'NAME' field in SUB_FOOD_GROUP table" doc:id="838266c3-30a2-4670-9c4e-4fb2f22c2273" config-ref="HTTP_Request_config_CentralDB" path="/tables/sub_food_group/name/{col_val}" target="subFoodGroupPK">
@@ -360,7 +371,7 @@ output application/java
 output application/java
 ---
 {
-	SubFoodGroupID: payload,
+	SubFoodGroupID: vars.subFoodGroupPK,
 	Name: vars.subCurrElement.food,
 	FoodGroupID: vars.foodGroupPK
 }]" doc:name="SubFoodGroupObj" doc:id="99930900-80b1-4e48-90b2-f9f35e6dec67" variableName="subFoodGroupObj" />
@@ -370,16 +381,16 @@ output application/java
 vars.subFoodGroupList + vars.subFoodGroupObj]" doc:name="Add to SubFoodGroupList" doc:id="223334a0-ce45-4c8a-b032-e74099d59a1a" variableName="subFoodGroupList" />
 				</when>
 				<otherwise >
-					<logger level="INFO" doc:name="Log that record exists in 'SUB_FOOD_GROUP' table" doc:id="e5c7e105-5ca9-497b-965a-34008e7c0620" message="Record with 'NAME' #[vars.currElement.food] exists in 'SUB_FOOD_GROUP' table" />
+					<logger level="INFO" doc:name="Log that record exists in 'SUB_FOOD_GROUP' table" doc:id="e5c7e105-5ca9-497b-965a-34008e7c0620" message="Record with 'NAME' #[vars.subCurrElement.food] exists in 'SUB_FOOD_GROUP' table" />
 				</otherwise>
 			</choice>
-			<http:request method="GET" doc:name="Invoke SAPI to Fetch Next Value of Sequence 'PAIRING_SEQ'" doc:id="0e276022-2eb8-454d-8b3d-9d34606b25b0" config-ref="HTTP_Request_config_CentralDB" path="/sequences/pairing_seq"/>
+			<http:request method="GET" doc:name="Invoke SAPI to Fetch Next Value of Sequence 'PAIRING_SEQ'" doc:id="0e276022-2eb8-454d-8b3d-9d34606b25b0" config-ref="HTTP_Request_config_CentralDB" path="/sequences/pairing_seq" target="pairingPK"/>
 			<set-variable value="#[%dw 2.0
 output application/java
 ---
 {
-	PairID: payload,
-	UPC: vars.currElement.UPC,
+	PairID: vars.pairingPK,
+	Upc: vars.currElementUpc,
 	FoodGroupID: vars.foodGroupPK,
 	SubFoodGroupID: vars.subFoodGroupPK
 }]" doc:name="PairingsObj" doc:id="02cae04a-25d9-4ba8-b15a-d47b37181def" variableName="pairingsObj"/>
